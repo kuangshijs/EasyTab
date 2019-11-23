@@ -35,6 +35,11 @@ import net.minecraft.server.v1_12_R1.PacketPlayOutTitle;
 import net.minecraft.server.v1_12_R1.PlayerConnection;
 
 public class Tab extends JavaPlugin implements Listener  {
+	
+	/**
+	*Powered by AzureHanChen
+	*/
+	
 
     final String version = "1.0.0";
     private PluginLogger logger = null;
