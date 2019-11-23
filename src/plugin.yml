@@ -1,0 +1,10 @@
+name: EazyTab
+main: github.azurehanchen.Tab
+version: 1.0.0
+author: AzureHanChen
+softdepend: [PlaceholderAPI]
+commands:
+  easytab:
+permissions:
+    easytab.admin:
+        default: op
