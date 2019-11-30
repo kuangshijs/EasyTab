@@ -1,1 +1,13 @@
-Tab: "%player_name%"
+﻿Tab: 
+  Enable: true
+  Tab: "%player_name%"
+Tablist:
+  Enable: true
+  Header: |-
+    &7
+    &7&e欢迎您，%player_name%&7&r
+    &7
+  Footer: |-
+    &7
+    &e您有%playerpoints_points%点券
+    &7

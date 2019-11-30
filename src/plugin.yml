@@ -1,7 +1,8 @@
-name: EazyTab
+name: EasyTab
 main: github.azurehanchen.Tab
-version: 1.0.0
+version: 1.1.0
 author: AzureHanChen
+depend: [ProtocolLib]
 softdepend: [PlaceholderAPI]
 commands:
   easytab:

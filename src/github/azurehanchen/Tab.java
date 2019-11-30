@@ -8,12 +8,13 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.craftbukkit.v1_12_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginAwareness;
@@ -28,11 +29,9 @@ import com.google.common.io.ByteStreams;
 
 
 import me.clip.placeholderapi.PlaceholderAPI;
-import net.minecraft.server.v1_12_R1.ChatComponentText;
-import net.minecraft.server.v1_12_R1.IChatBaseComponent;
-import net.minecraft.server.v1_12_R1.Packet;
-import net.minecraft.server.v1_12_R1.PacketPlayOutTitle;
-import net.minecraft.server.v1_12_R1.PlayerConnection;
+import com.comphenix.protocol.*;
+import com.comphenix.protocol.wrappers.*;
+import com.comphenix.protocol.events.*;
 
 public class Tab extends JavaPlugin implements Listener  {
 	
@@ -41,11 +40,11 @@ public class Tab extends JavaPlugin implements Listener  {
 	*/
 	
 
-    final String version = "1.0.0";
+    final String version = "1.1.0";
     private PluginLogger logger = null;
     private FileConfiguration newxxx = null;
     File xxxFile = new File(getDataFolder(), "config.yml");
-    
+    private ProtocolManager protocolManager;
 
 	@Override
 	public void onEnable() {
@@ -56,6 +55,18 @@ public class Tab extends JavaPlugin implements Listener  {
 		Bukkit.getConsoleSender().sendMessage("§f");
 		Bukkit.getConsoleSender().sendMessage("§f");
 		Bukkit.getPluginManager().registerEvents(this, this);
+		this.protocolManager = ProtocolLibrary.getProtocolManager();
+		if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
+			Bukkit.getConsoleSender().sendMessage("§f[INFO] §f成功Hook to §aPlaceholderAPI");
+        } else {
+    		Bukkit.getConsoleSender().sendMessage("§f[§cWARN] §c未找到PlaceholderAPI,插件可能会出现错误");
+        }
+		if (Bukkit.getPluginManager().getPlugin("ProtocolLib") != null) {
+			Bukkit.getConsoleSender().sendMessage("§f[INFO] §f成功Hook to §aProtocolLib");
+        } else {
+    		Bukkit.getConsoleSender().sendMessage("§f[§cWARN] §c未找到PlaceholderAPI,插件可能会出现错误");
+            throw new RuntimeException("");
+        }
         if(!getDataFolder().exists()) {
             getDataFolder().mkdir();
     }
@@ -66,6 +77,11 @@ public class Tab extends JavaPlugin implements Listener  {
     reloadxxx();
 
 }
+	
+    private String FixColor(final String string) {
+        return ChatColor.translateAlternateColorCodes('&', string);
+    }
+
 	
 	public boolean onCommand(CommandSender sender,Command cmd,String label,String[] args)
 	{
@@ -85,24 +101,11 @@ public class Tab extends JavaPlugin implements Listener  {
 	                	p.sendMessage("§f插件作者: §eAzureHanChen");
 	                	p.sendMessage("§e");
 	                	p.sendMessage("§f使用 §e§n/easytab help§r §f获取帮助");         
-		                String title_temp1 = "§f§lEasyTab";
-	                    String subtitle_temp1 = "§c感谢您使用此插件,不妨来评个分?";
-	                    final PlayerConnection pc = ((CraftPlayer)p).getHandle().playerConnection;
-	                    final PacketPlayOutTitle title = new PacketPlayOutTitle(PacketPlayOutTitle.EnumTitleAction.TITLE, (IChatBaseComponent)new ChatComponentText(title_temp1), 1, 2, 1);
-	                    final PacketPlayOutTitle subtitle = new PacketPlayOutTitle(PacketPlayOutTitle.EnumTitleAction.SUBTITLE, (IChatBaseComponent)new ChatComponentText(subtitle_temp1), 1, 2, 1);
-	                    pc.sendPacket((Packet<?>)title);
-	                    pc.sendPacket((Packet<?>)subtitle);
 	                    return true;
 	                    
 	            	}
 	            	else {
-	                String title_temp = "§f§lEasyTab";
-	    			String subtitle_temp =  "§c§l对不起,您没有权限";
-	                final PlayerConnection pc = ((CraftPlayer) ((CraftPlayer) sender).getPlayer()).getHandle().playerConnection;
-	                final PacketPlayOutTitle title = new PacketPlayOutTitle(PacketPlayOutTitle.EnumTitleAction.TITLE, (IChatBaseComponent)new ChatComponentText(title_temp), 1, 2, 1);
-	                final PacketPlayOutTitle subtitle = new PacketPlayOutTitle(PacketPlayOutTitle.EnumTitleAction.SUBTITLE, (IChatBaseComponent)new ChatComponentText(subtitle_temp), 1,2,2);
-	                pc.sendPacket((Packet<?>)title);
-	                pc.sendPacket((Packet<?>)subtitle);
+						sender.sendMessage("§7[§eEasyTab§7] §c您没有使用该命令的权限");
 	                return true;
 	            	}
 				}
@@ -114,7 +117,10 @@ public class Tab extends JavaPlugin implements Listener  {
 			else if(args[0].equalsIgnoreCase("reload"))
 			{
 					if (sender.hasPermission("easytab.admin")) {
-						reloadxxx();
+
+					    	reloadxxx();
+
+						
 						sender.sendMessage("§7[§eEasyTab§7] §a尝试重载插件配置中");
 					return true;
 					}
@@ -147,8 +153,62 @@ public class Tab extends JavaPlugin implements Listener  {
 		return true;
 		
 	}
+	
+	
+	@EventHandler
+    public void onPlayerJoin(final PlayerJoinEvent e) {
+		if (getxxx().getBoolean("Tablist.Enable")) {
+		String header = FixColor(getxxx().getString("Tablist.Header"));
+		header = PlaceholderAPI.setPlaceholders(e.getPlayer(), header);
+		String footer = FixColor(getxxx().getString("Tablist.Footer"));
+		footer = PlaceholderAPI.setPlaceholders(e.getPlayer(), footer);
+        final PacketContainer pc = this.protocolManager.createPacket(PacketType.Play.Server.PLAYER_LIST_HEADER_FOOTER);
+        pc.getChatComponents().write(0, (WrappedChatComponent)WrappedChatComponent.fromText(header)).write(1, (WrappedChatComponent)WrappedChatComponent.fromText(footer));
+        try {
+            this.protocolManager.sendServerPacket(e.getPlayer(), pc);
+            update(e.getPlayer());
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+	}
+	
+	
+    
+    public void updateTablist(final Player p) {
+		if (getxxx().getBoolean("Tablist.Enable")) {
+		String header = FixColor(getxxx().getString("Tablist.Header"));
+		header = PlaceholderAPI.setPlaceholders(p , header);
+		String footer = FixColor(getxxx().getString("Tablist.Footer"));
+		footer = PlaceholderAPI.setPlaceholders(p , footer);
+        final PacketContainer pc = this.protocolManager.createPacket(PacketType.Play.Server.PLAYER_LIST_HEADER_FOOTER);
+        pc.getChatComponents().write(0, (WrappedChatComponent)WrappedChatComponent.fromText(header)).write(1, (WrappedChatComponent)WrappedChatComponent.fromText(footer));
+        try {
+            this.protocolManager.sendServerPacket(p , pc);
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+    }
+    
+    public void update(Player p) {
+		new BukkitRunnable()
+		{
+			public void run()
+			{
+				updateTablist(p);
+			}
+			}.runTaskTimerAsynchronously((this), 5L, 20L);
+    }
 
 
+
+	
+	/*
+	 * 截取16位字符
+	 */
     public static String getPlayer(final Player player) {
 
         String name;
@@ -164,11 +224,16 @@ public class Tab extends JavaPlugin implements Listener  {
 
     @EventHandler
     public void onMove(final PlayerMoveEvent event) {
+    	if (getxxx().getBoolean("Tab.Enable")) {
+    		
+    	
     	final Player p = event.getPlayer();
-    	String Text = "%player_name%";
-    	Text = " " + PlaceholderAPI.setPlaceholders(event.getPlayer(), getxxx().getString("Tab"));
+    	String Text = getxxx().getString("Tab.Tab");
+    	
+    	Text = " " + PlaceholderAPI.setPlaceholders(event.getPlayer(), Text );
         final String s = ChatColor.translateAlternateColorCodes('&', Text);
         p.setPlayerListName(s);
+    	}
     }
     
     
