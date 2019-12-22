@@ -27,6 +27,8 @@ import com.comphenix.protocol.*;
 import com.comphenix.protocol.wrappers.*;
 import com.comphenix.protocol.events.*;
 
+
+
 public class Tab extends JavaPlugin implements Listener  {
 	
 	/**
@@ -34,9 +36,19 @@ public class Tab extends JavaPlugin implements Listener  {
 	*/
 	
 
-    final String version = "1.2.0";
+    final String version = "1.3.0";
     FileConfiguration config;
     private ProtocolManager protocolManager;
+    Mvdw m;
+    
+    public String head;
+    public String foot;
+    public Long headcooldown;
+    public Long tabcooldown;
+    public String tab;
+    public Boolean headenable;
+    public Boolean tabenable;
+    public Boolean Update;
 
 	@Override
 	public void onEnable() {
@@ -48,6 +60,14 @@ public class Tab extends JavaPlugin implements Listener  {
 		Bukkit.getConsoleSender().sendMessage("§f");
 		Bukkit.getPluginManager().registerEvents(this, this);
 		this.protocolManager = ProtocolLibrary.getProtocolManager();
+		this.head = this.config.getString("Tablist.Header");
+		this.foot = this.config.getString("Tablist.Footer");
+		this.headcooldown = this.config.getLong("Tablist.Cooldown");
+		this.tabcooldown = this.config.getLong("Tab.Cooldown");
+		this.tab = this.config.getString("Tab.Tab");
+		this.headenable = this.config.getBoolean("Tablist.Enable");
+		this.tabenable = this.config.getBoolean("Tab.Enable");
+		this.Update = this.config.getBoolean("Update");
 		if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
 			Bukkit.getConsoleSender().sendMessage("§f[§eEasyTab§f] §f[INFO] §f成功Hook to §aPlaceholderAPI");
         } else {
@@ -59,15 +79,43 @@ public class Tab extends JavaPlugin implements Listener  {
     		Bukkit.getConsoleSender().sendMessage("§f[§eEasyTab§f] §f[§cWARN] §c未找到PlaceholderAPI,插件可能会出现错误");
             throw new RuntimeException("");
         }
+		if (Bukkit.getPluginManager().getPlugin("MVdWPlaceholderAPI") != null) {
+			Bukkit.getConsoleSender().sendMessage("§f[§eEasyTab§f] §f[INFO] §f成功Hook to §aMVdWPlaceholderAPI");
+        } else {
+    		Bukkit.getConsoleSender().sendMessage("§f[§eEasyTab§f] §f[§cWARN] §c未找到MVdWPlaceholderAPI,插件可能会出现错误");
+        }
         if(!getDataFolder().exists()) {
             getDataFolder().mkdir();
     }
         reload();
         
-        if (this.config.getBoolean("Update")) {
-        	updateCheck();
+        if (this.Update) {
+        
+        
+        new BukkitRunnable()
+		{
+			public void run()
+			{
+				if(isLatestVersion())
+				{
+					Bukkit.getConsoleSender().sendMessage("§f");
+					Bukkit.getConsoleSender().sendMessage("§f[§eEasyTab§f] §f[§eINFO§f] §f您运行的是最新版本的插件 V" + (version));
+					Bukkit.getConsoleSender().sendMessage("§f");
+				}
+				else
+				{
+					Bukkit.getConsoleSender().sendMessage("§f");
+					Bukkit.getConsoleSender().sendMessage("§f[§eEasyTab§f] §f[§cWARN§f] §e您运行的不是最新版本的插件!");
+					Bukkit.getConsoleSender().sendMessage("§f[§eEasyTab§f] §f[§cWARN§f] §f您的当前版本 V" + (version));
+					Bukkit.getConsoleSender().sendMessage("§f[§eEasyTab§f] §f[§cWARN§f] §f当前最新版本 V" + getLatestVersion());
+					Bukkit.getConsoleSender().sendMessage("§f");
+				}
+			}
+		}.runTaskTimerAsynchronously((this), 20L, 36000L);
         }
     	}
+	
+	
        
 	
 
@@ -76,8 +124,14 @@ public class Tab extends JavaPlugin implements Listener  {
 
 
 	
-    private String FixColor(final String string) {
-        return ChatColor.translateAlternateColorCodes('&', string);
+    public String FixColor(final String string,Player p) {
+    	
+        String text =  ChatColor.translateAlternateColorCodes('&', string);
+        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+        	text = PlaceholderAPI.setPlaceholders(p , text);
+        }
+        
+        return m.FixWithMvdw(text, p);
     }
 
 	
@@ -107,7 +161,7 @@ public class Tab extends JavaPlugin implements Listener  {
 	                return true;
 	            	}
 				}
-				sender.sendMessage("§f[§eINFO§f] §a该命令只能由玩家进行");
+				sender.sendMessage("§f[§eEasyTab§f] §f[§eINFO§f] §f使用 §e/easytab help §f获取帮助");
 				return true;
 				
 			}
@@ -120,6 +174,7 @@ public class Tab extends JavaPlugin implements Listener  {
 
 						
 						sender.sendMessage("§7[§eEasyTab§7] §a尝试重载插件配置中");
+						sender.sendMessage("§7[§eEasyTab§7] §a如果您修改了Update选项,那么请重启服务器以看到更改");
 					return true;
 					}
 					else {
@@ -155,21 +210,20 @@ public class Tab extends JavaPlugin implements Listener  {
 	
 	@EventHandler
     public void onPlayerJoin(final PlayerJoinEvent e) {
-		long cooldown = this.config.getLong("Tablist.Cooldown");
+		long cooldown = this.headcooldown;
 		Player p = e.getPlayer();
 		new BukkitRunnable() {
-	            //当前播放广播的位置
 	            @Override
 	            public void run(){
- updateTablist(p);
+           updateTablist(p);
 
 	            }
-	        }.runTaskTimerAsynchronously(this, 0, cooldown*20);
+	        }.runTaskTimerAsynchronously(this, 0, cooldown);
 	    }
 	
 	@EventHandler
     public void onPlayerJoin1(final PlayerJoinEvent e) {
-		long cooldown = this.config.getLong("Tab.Cooldown");
+		long cooldown = this.tabcooldown;
 		Player p = e.getPlayer();
 		new BukkitRunnable() {
 	            //当前播放广播的位置
@@ -177,17 +231,17 @@ public class Tab extends JavaPlugin implements Listener  {
 	            public void run(){
  updateTab(p);
 	            }
-	        }.runTaskTimerAsynchronously(this, 0, cooldown*20);
+	        }.runTaskTimerAsynchronously(this, 0, cooldown);
 	    }
 	
 	
 	
     
     public void updateTablist(final Player p) {
-		if (this.config.getBoolean("Tablist.Enable")) {
-		String header = FixColor(this.config.getString("Tablist.Header"));
+		if (this.headenable) {
+		String header = FixColor(this.head,p);
 		header = PlaceholderAPI.setPlaceholders(p , header);
-		String footer = FixColor(this.config.getString("Tablist.Footer"));
+		String footer = FixColor(this.foot,p);
 		footer = PlaceholderAPI.setPlaceholders(p , footer);
         final PacketContainer pc = this.protocolManager.createPacket(PacketType.Play.Server.PLAYER_LIST_HEADER_FOOTER);
         pc.getChatComponents().write(0, (WrappedChatComponent)WrappedChatComponent.fromText(header)).write(1, (WrappedChatComponent)WrappedChatComponent.fromText(footer));
@@ -202,10 +256,10 @@ public class Tab extends JavaPlugin implements Listener  {
 
     
     public void updateTab(final Player p) {
-    	if (this.config.getBoolean("Tab.Enable")) {
+    	if (this.tabenable) {
     		
         	
-    	String Text = this.config.getString("Tab.Tab");
+    	String Text = this.tab;
     	
     	Text = PlaceholderAPI.setPlaceholders(p , Text );
         final String s = ChatColor.translateAlternateColorCodes('&', Text);
@@ -229,7 +283,7 @@ public class Tab extends JavaPlugin implements Listener  {
 			e.printStackTrace();
 			ver= "0.0.0";
 			
-			Bukkit.getConsoleSender().sendMessage("§f[§eEasyTab§f] §f[§cWARN] §c错误:无法检查更新");
+			Bukkit.getConsoleSender().sendMessage("§f[§eEasyTab§f] §f[§cWARN§f] §c错误:无法检查更新");
 		}
 		return ver;
    }
@@ -244,29 +298,7 @@ public class Tab extends JavaPlugin implements Listener  {
 				}
 		return isLatest;
 	}
-	public void updateCheck()
-	{
-		new BukkitRunnable()
-		{
-			public void run()
-			{
-				if(isLatestVersion())
-				{
-					Bukkit.getConsoleSender().sendMessage("§f");
-					Bukkit.getConsoleSender().sendMessage("§f[§eEasyTab§f] §f[§eINFO§f] §f您运行的是最新版本的插件 V" + (version));
-					Bukkit.getConsoleSender().sendMessage("§f");
-				}
-				else
-				{
-					Bukkit.getConsoleSender().sendMessage("§f");
-					Bukkit.getConsoleSender().sendMessage("§f[§eEasyTab§f] §f[§cWARN§f] §e您运行的不是最新版本的插件!");
-					Bukkit.getConsoleSender().sendMessage("§f[§eEasyTab§f] §f[§cWARN§f] §f您的当前版本 V" + (version));
-					Bukkit.getConsoleSender().sendMessage("§f[§eEasyTab§f] §f[§cWARN§f] §f当前最新版本 V" + getLatestVersion());
-					Bukkit.getConsoleSender().sendMessage("§f");
-				}
-			}
-		}.runTaskTimerAsynchronously((this), 20L, 36000L);
-	}
+
 
 
 	
@@ -315,5 +347,13 @@ public class Tab extends JavaPlugin implements Listener  {
         }
         catch (ReflectiveOperationException ex) {}
         this.config = this.getConfig();
+		this.head = this.config.getString("Tablist.Header");
+		this.foot = this.config.getString("Tablist.Footer");
+		this.headcooldown = this.config.getLong("Tablist.Cooldown");
+		this.tabcooldown = this.config.getLong("Tab.Cooldown");
+		this.tab = this.config.getString("Tab.Tab");
+		this.headenable = this.config.getBoolean("Tablist.Enable");
+		this.tabenable = this.config.getBoolean("Tab.Enable");
+		this.Update = this.config.getBoolean("Update");
     }
 }

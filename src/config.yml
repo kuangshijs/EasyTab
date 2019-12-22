@@ -3,12 +3,12 @@
 Tab:
   Enable: true
   Cooldown: 5
-  #单位:秒
+  #单位:Ticks
   Tab: "%player_name%"
 Tablist:
   Enable: true
   Cooldown: 5
-  #单位:秒
+  #单位:Ticks
   Header: |-
     &7
     &7&e欢迎您，%player_name%&7&r
